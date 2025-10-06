@@ -95,3 +95,26 @@ This assumes the following :
 That's it. The installation took about 20 minutes on my Ryzen 5950X. You can run the game by going to `Game/Bin` in the installation directory and doing `wine TS3W.exe`. I also installed dxvk via winetricks but this isn't necessary.
 
 If you want to have *all the content* (some of it is provided as `Sims3Pack` files which must be actually "installed" into the game first), you'll need to use the launcher which is incredibly flaky with Wine and requires `dotnet20` and `vcrun2005sp1` to be installed via winetricks. Once you have that, do `wine Sims3LauncherW.exe`, click *Downloads*, then *Select All* and *Install*. Another small window with a progress bar should pop up, wait until it completes and close the launcher.
+
+## TS3W.exe crashes with a "Division by zero" error
+
+`tl;dr` Change the byte in `TS3W.exe` at offset `0x21211c` from `F8` to `E8`.
+
+This will happen only with some CPUs. This is the code that triggers this :
+```
+0x0061210a      mov eax, 4
+0x0061210f      xor ecx, ecx
+0x00612111      cpuid
+0x00612113      mov dword [var_8h], eax
+0x00612117      mov eax, dword [var_8h]
+0x0061211b      sar eax, 26
+0x0061211e      pop esi
+0x0061211f      add eax, 1
+// rest of epilogue
+```
+
+The value returned from this function (i.e. the value in `eax`) is then used as the divisor for something else. The value the code is after is contained in the six upper bits of EAX after a CPUID(EAX=4,ECX=0) which is supposed to be the *Maximum number of addressable IDs for processor cores in physical package, minus 1*.
+
+However, if that value is the maximum allowed value, i.e. 63 or `0b111111`, then using `sar` to shift it to the right will cause `eax` to end up with an all-one bit pattern, i.e. `-1` in two's complement, due to `sar` copying the uppermost bit. Executing the `add eax, 1` later will result in setting it to zero. Replacing `sar` with `shr` (as noted in the `tl;dr`) fixes this, and the origin of this bug is probably an `int` being used instead of an `unsigned int` when doing the extractions in the original C code.
+
+Both of my AMD CPUs (5950X and 5800X3D) return zeroes in all registers after a CPUID(EAX=4), though all CPUID related code might be skipped if the CPU is detected to be something else than a `GenuineIntel`, as I have not checked that deep. The trusty Intel Core i7-3632QM sets the field in question to 7 which makes sense as it's a 8-thread CPU. However, the i9-13950HX (where the crash originally happened) sets it to 63 which doesn't even make sense as it's a 32-thread CPU. Moreover, the N100 sets it to 63 as well which makes even less sense as it's a 4-thread CPU. It seems like the meaning of this field must have changed somehow (unless there's something I don't know and it is possible to have 64 *addressable IDs for processor cores in physical package* in a 32- or 4-thread CPU indeed) but Intel's Instruction Set Reference doesn't list 63 as a special value.

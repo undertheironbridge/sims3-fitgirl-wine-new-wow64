@@ -117,4 +117,11 @@ The value returned from this function (i.e. the value in `eax`) is then used as 
 
 However, if that value is the maximum allowed value, i.e. 63 or `0b111111`, then using `sar` to shift it to the right will cause `eax` to end up with an all-one bit pattern, i.e. `-1` in two's complement, due to `sar` copying the uppermost bit. Executing the `add eax, 1` later will result in setting it to zero. Replacing `sar` with `shr` (as noted in the `tl;dr`) fixes this, and the origin of this bug is probably an `int` being used instead of an `unsigned int` when doing the extractions in the original C code.
 
-Both of my AMD CPUs (5950X and 5800X3D) return zeroes in all registers after a CPUID(EAX=4), though all CPUID related code might be skipped if the CPU is detected to be something else than a `GenuineIntel`, as I have not checked that deep. The trusty Intel Core i7-3632QM sets the field in question to 7 which makes sense as it's a 8-thread CPU. However, the i9-13950HX (where the crash originally happened) sets it to 63 which doesn't even make sense as it's a 32-thread CPU. Moreover, the N100 sets it to 63 as well which makes even less sense as it's a 4-thread CPU. It seems like the meaning of this field must have changed somehow (unless there's something I don't know and it is possible to have 64 *addressable IDs for processor cores in physical package* in a 32- or 4-thread CPU indeed) but Intel's Instruction Set Reference doesn't list 63 as a special value.
+The values found in this field vary wildly between CPUs :
+ * Both of my AMD CPUs (5950X and 5800X3D) return zeroes in all registers after a CPUID(EAX=4,ECX=0).
+ * Intel Core i7-3632QM (Ivy Bridge, 3rd gen) sets the field in question to 7 which makes sense as it's a 8-thread CPU.
+ * Intel Core i9-13950HX (Raptor Lake, 13th gen), where the crash originally happened, sets it to 63 which doesn't even make sense as it's a 32-thread CPU.
+ * Intel N100 (Alder Lake-N) sets it to 63 as well which makes even less sense as it's a 4-thread CPU.
+ * Intel Celeron J4105 (Gemini Lake / Goldmont Plus) sets it to 31, so the code wouldn't crash, though the CPU is also a 4-thread one so the value is peculiar.
+
+It seems like the meaning of this field must have changed somehow (unless there's something I don't know and it is possible to have 64 *addressable IDs for processor cores  in physical package* in a 32- or 4-thread CPU indeed, or those two quantities are simply unrelated despite the naming suggesting so) but Intel's Instruction Set Reference doesn't list 63 as a special value.

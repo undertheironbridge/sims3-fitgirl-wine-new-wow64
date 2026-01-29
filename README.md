@@ -74,6 +74,10 @@ I've never tracked down the cause of the bug but setting `WINEDEBUG=warn+heap` s
 
 ## Putting it all together
 
+Firstly, download debug symbols for Wine. Starting with version 10.20-2, the Arch package for Wine does not contain debug symbols which are provided in a separate package (which is generally a good thing as only a handful of people are going to need those and it makes the core package about 1GiB smaller) which we're going to need as trying to break in `winedbg` will not work without them. At the time of writing, the only mirror providing `-debug` packages is [`geo.mirror.pkgbuild.com/`](https://geo.mirror.pkgbuild.com/extra-debug/os/x86_64/). You can paste the link to the package straight into pacman, for example `sudo pacman -U https://geo.mirror.pkgbuild.com/extra-debug/os/x86_64/wine-debug-11.1-2-x86_64.pkg.tar.zst`.
+
+You can uninstall the debug symbols after completing the installation as they won't be needed anymore.
+
 This assumes the following :
  * `$WINEPREFIX` is the prefix location that you're installing into,
  * `$SOURCEDIR` is the directory containing the repack files (`setup.exe` and all the `.bin`s),
@@ -120,8 +124,7 @@ However, if that value is the maximum allowed value, i.e. 63 or `0b111111`, then
 The values found in this field vary wildly between CPUs :
  * Both of my AMD CPUs (5950X and 5800X3D) return zeroes in all registers after a CPUID(EAX=4,ECX=0).
  * Intel Core i7-3632QM (Ivy Bridge, 3rd gen) sets the field in question to 7 which makes sense as it's a 8-thread CPU.
- * Intel Core i9-13950HX (Raptor Lake, 13th gen), where the crash originally happened, sets it to 63 which doesn't even make sense as it's a 32-thread CPU.
- * Intel N100 (Alder Lake-N) sets it to 63 as well which makes even less sense as it's a 4-thread CPU.
  * Intel Celeron J4105 (Gemini Lake / Goldmont Plus) sets it to 31, so the code wouldn't crash, though the CPU is also a 4-thread one so the value is peculiar.
+ * Any newer Intel CPUs I tested with (N100 / Alder Lake-N, i9-13950HX / Raptor Lake 13th gen, Ultra 5 225U / Arrow Lake) set it to 63 regardless of the number of threads/cores in the CPU itself.
 
 It seems like the meaning of this field must have changed somehow (unless there's something I don't know and it is possible to have 64 *addressable IDs for processor cores  in physical package* in a 32- or 4-thread CPU indeed, or those two quantities are simply unrelated despite the naming suggesting so) but Intel's Instruction Set Reference doesn't list 63 as a special value.

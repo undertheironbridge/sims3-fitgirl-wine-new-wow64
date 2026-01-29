@@ -2,7 +2,7 @@
 
 My distro of choice, Arch Linux, transitioned its `wine` package to "new WoW64" in [June 2025](https://archlinux.org/news/transition-to-the-new-wow64-wine-and-wine-staging/). Most of my prefixes before that were 32-bit so I needed to recreate them. One of those prefixes contained a Sims 3 install and I finally looked into that last weekend.
 
-Information in here was valid at the time of writing, i.e. early October 2025 and Wine 10.16.
+Information in here was valid at the time of writing, i.e. late January 2026 and Wine 11.1.
 
 Unfortunately there's no `tl;dr` here as the process is a bit involved.
 

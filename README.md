@@ -2,7 +2,7 @@
 
 My distro of choice, Arch Linux, transitioned its `wine` package to "new WoW64" in [June 2025](https://archlinux.org/news/transition-to-the-new-wow64-wine-and-wine-staging/). Most of my prefixes before that were 32-bit so I needed to recreate them. One of those prefixes contained a Sims 3 install and I finally looked into that last weekend.
 
-Information in here was valid at the time of writing, i.e. late January 2026 and Wine 11.1.
+Last updated : early June 2026, Wine 11.10.
 
 Unfortunately there's no `tl;dr` here as the process is a bit involved.
 
@@ -74,7 +74,7 @@ I've never tracked down the cause of the bug but setting `WINEDEBUG=warn+heap` s
 
 ## Putting it all together
 
-Firstly, download debug symbols for Wine. Starting with version 10.20-2, the Arch package for Wine does not contain debug symbols which are provided in a separate package (which is generally a good thing as only a handful of people are going to need those and it makes the core package about 1GiB smaller) which we're going to need as trying to break in `winedbg` will not work without them. At the time of writing, the only mirror providing `-debug` packages is [`geo.mirror.pkgbuild.com/`](https://geo.mirror.pkgbuild.com/extra-debug/os/x86_64/). You can paste the link to the package straight into pacman, for example `sudo pacman -U https://geo.mirror.pkgbuild.com/extra-debug/os/x86_64/wine-debug-11.1-2-x86_64.pkg.tar.zst`.
+Firstly, download debug symbols for Wine. Starting with version 10.20-2, the Arch package for Wine does not contain debug symbols which are provided in a separate package (which is generally a good thing as only a handful of people are going to need those and it makes the core package about 1GiB smaller) which we're going to need as adding breakpoints in `winedbg` will not work without them. At the time of writing, the only mirror providing `-debug` packages is [`geo.mirror.pkgbuild.com/`](https://geo.mirror.pkgbuild.com/extra-debug/os/x86_64/). You can paste the link to the package straight into pacman, for example `sudo pacman -U https://geo.mirror.pkgbuild.com/extra-debug/os/x86_64/wine-debug-$(pacman -Q wine | cut '-d ' -f2)-x86_64.pkg.tar.zst`.
 
 You can uninstall the debug symbols after completing the installation as they won't be needed anymore.
 
@@ -96,7 +96,7 @@ This assumes the following :
 11. Click `Install`. This will cause the debugger to break again. Keep doing `continue` until `unarc.dll` appears in the temporary directory.
 12. Copy the modified `unarc.dll` over the original one, delete the breakpoints (`delete 1` and `delete 2`) and then `continue`. The installer will now run.
 
-That's it. The installation took about 20 minutes on my Ryzen 5950X. You can run the game by going to `Game/Bin` in the installation directory and doing `wine TS3W.exe`. I also installed dxvk via winetricks but this isn't necessary.
+That's it. The installation took about 20 minutes on my Ryzen 5950X. You can run the game by going to `Game/Bin` in the installation directory and doing `wine TS3W.exe`. I also installed dxvk via winetricks as it gives better performance on my GPU (Radeon RX550) but this isn't strictly necessary.
 
 If you want to have *all the content* (some of it is provided as `Sims3Pack` files which must be actually "installed" into the game first), you'll need to use the launcher which is incredibly flaky with Wine and requires `dotnet20` and `vcrun2005sp1` to be installed via winetricks. Once you have that, do `wine Sims3LauncherW.exe`, click *Downloads*, then *Select All* and *Install*. Another small window with a progress bar should pop up, wait until it completes and close the launcher.
 
